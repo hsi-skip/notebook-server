@@ -16,10 +16,11 @@ public class Execution {
     /**
      * Constructor
      */
-    public Execution() {
-    	
-    	this.context = Context.newBuilder("python").out(this.outputStream).err(this.outputStream).build();
-    	this.outputStream =  new ByteArrayOutputStream();
+    public Execution(String language) {
+        this.outputStream =  new ByteArrayOutputStream();
+        this.context = Context.newBuilder(language).out(this.outputStream).err(this.outputStream).build();
+        //this.context = Context.newBuilder(language).build();
+
 
     }
 }

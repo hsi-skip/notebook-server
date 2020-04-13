@@ -38,13 +38,11 @@ public class InterpreterController {
 		}
 		
 		try {
-
 			Execution execution = interpreterService.execute(request);
 			response.setResult(execution.getOutputStream().toString());
-			response.setSessionId(request.getSessionId());
-
 		} catch (RuntimeException e) {
 			response.setResult(e.getMessage());
+		}finally {
 			response.setSessionId(request.getSessionId());
 		}
 

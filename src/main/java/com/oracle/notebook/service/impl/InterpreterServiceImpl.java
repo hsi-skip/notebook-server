@@ -11,10 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.graalvm.polyglot.PolyglotException;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.io.PrintStream;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,72 +20,84 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class InterpreterServiceImpl implements InterpreterService {
 
-	private final Pattern pattern = Pattern.compile("%(\\w+)\\s+(.*)");
-	private Map<String, Execution> sessionExecution = new HashMap<>();
+    private final Pattern pattern = Pattern.compile("%(\\w+)\\s+(.*)");
+    private Map<String, Execution> sessionExecution = new HashMap<>();
+    private String result;
 
-	@Override
-	public Execution execute(InterpreterRequest request) throws RuntimeException {
+    @Override
+    public Execution execute(InterpreterRequest request) throws RuntimeException {
 
-		Timer timer = new Timer(true);
-		final Execution finalContext;
-		Execution context = null;
+        Timer timer = new Timer(true);
+        final Execution finalContext;
+        Execution context = null;
 
-		try {
+        try {
 
-			String language;
-			String code;
+            String language;
+            String code;
 
-			Matcher matcher = pattern.matcher(request.getCode());
+            Matcher matcher = pattern.matcher(request.getCode());
 
-			if (matcher.matches()) {
-				language = matcher.group(1);
-				code = matcher.group(2);
-			} else {
-				throw new InvalidRequestFormatException("Invalid request format, use format like '%<interpreter-name><whitespace><code>'");
-			}
+            if (matcher.matches()) {
+                language = matcher.group(1);
+                code = matcher.group(2);
+            } else {
+                throw new InvalidRequestFormatException("Invalid request format, use format like '%<interpreter-name><whitespace><code>'");
+            }
 
-			if (!language.equals(Constants.LAGUAGE)) {
-				throw new LanguageUnsupportedException("This language is unsupported, the only language suported is " + Constants.LAGUAGE);
-			}
+            boolean exist = Arrays.stream(Constants.LANGUAGES).anyMatch(language::equalsIgnoreCase);
+            if (!exist) {
+                throw new LanguageUnsupportedException("This language is unsupported, the only language suported is " + Constants.LANGUAGES);
+            }
 
-			context = this.sessionExecution.get(request.getSessionId());
-			if (context == null) {
-				context = new Execution();
-				this.sessionExecution.put(request.getSessionId(), context);
-			}
+            context = this.sessionExecution.get(request.getSessionId());
 
-			context.getContext().enter();
-			context.getOutputStream().reset();
-			finalContext = context;
+            if (context == null) {
+                context = new Execution(language);
 
-			timer.schedule(new TimerTask() {
-				@Override
-				public void run() {
-					finalContext.getContext().close(true);
-				}
-			}, Constants.TIME_OUT_VALUE);
+                this.sessionExecution.put(request.getSessionId(), context);
+            }
 
-			finalContext.getContext().eval(language, code);
 
-		} catch (PolyglotException e) {
+            context.getContext().enter();
+            context.getOutputStream().reset();
+            finalContext = context;
 
-			if (e.isCancelled()) {
-				sessionExecution.remove(request.getSessionId());
-				throw new TimeOutException("Request taking too long to execute");
-			}
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    finalContext.getContext().close(true);
+                }
+            }, Constants.TIME_OUT_VALUE);
 
-			throw new RuntimeException(e.getMessage());
+            String result = finalContext.getContext().eval(language, code).toString();
+            this.prepareResult(finalContext, result);
 
-		} finally {
+        } catch (PolyglotException e) {
 
-			if (context != null) {
-				context.getContext().leave();
-			}
-			timer.cancel();
-			timer.purge();
-		}
+            if (e.isCancelled()) {
+                sessionExecution.remove(request.getSessionId());
+                throw new TimeOutException("Request taking too long to execute");
+            }
 
-		return finalContext;
-	}
+            throw new RuntimeException(e.getMessage());
+
+        } finally {
+
+            if (context != null) {
+                context.getContext().leave();
+            }
+            timer.cancel();
+            timer.purge();
+        }
+
+        return finalContext;
+    }
+
+    private void prepareResult(Execution execution, String result) {
+
+        result = Arrays.stream(new String[]{"undefined", "null"}).anyMatch(result::equalsIgnoreCase) ? "" : result;
+        new PrintStream(execution.getOutputStream()).print(result);
+    }
 
 }
