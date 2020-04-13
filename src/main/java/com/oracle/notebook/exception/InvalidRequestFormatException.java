@@ -8,6 +8,10 @@ public class InvalidRequestFormatException extends RuntimeException {
 
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * 
+	 * @param message
+	 */
 	public InvalidRequestFormatException(String message) {
         super(message);
     }

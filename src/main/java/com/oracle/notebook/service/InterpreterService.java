@@ -6,6 +6,12 @@ import com.oracle.notebook.models.InterpreterRequest;
 
 public interface InterpreterService {
 
+	/**
+	 * 
+	 * @param request
+	 * @return
+	 * @throws RuntimeException
+	 */
     Execution execute(InterpreterRequest request) throws RuntimeException;
     
 }

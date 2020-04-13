@@ -8,6 +8,10 @@ public class TimeOutException extends RuntimeException {
 
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * 
+	 * @param message
+	 */
 	public TimeOutException(String message) {
         super(message);
     }

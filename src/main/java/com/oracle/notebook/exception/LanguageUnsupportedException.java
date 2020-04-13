@@ -10,6 +10,10 @@ public class LanguageUnsupportedException extends RuntimeException {
 
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * 
+	 * @param message
+	 */
 	public LanguageUnsupportedException(String message) {
         super(message);
     }
