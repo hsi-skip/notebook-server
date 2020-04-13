@@ -22,7 +22,6 @@ public class InterpreterServiceImpl implements InterpreterService {
 
     private final Pattern pattern = Pattern.compile("%(\\w+)\\s+(.*)");
     private Map<String, Execution> sessionExecution = new HashMap<>();
-    private String result;
 
     @Override
     public Execution execute(InterpreterRequest request) throws RuntimeException {
